@@ -31,12 +31,12 @@ stages:
         command: build
         Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
       
-    - task: Docker@2
-      inputs: 
-        containerRegistry: 'TempDockerRegistry'
-        repository: 'riaoct30/tomcat8-java-webapp'
-        command: push
-        Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+#    - task: Docker@2
+#      inputs: 
+#        containerRegistry: 'TempDockerRegistry'
+#        repository: 'riaoct30/tomcat8-java-webapp'
+#        command: push
+#        Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
 
 
 
