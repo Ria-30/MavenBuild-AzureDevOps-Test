@@ -52,5 +52,6 @@ stages:
       inputs:
         helmVersion: '2.14.1'
         installKubectl: true
-
+    - script: |
+        kubectl get nodes
     
