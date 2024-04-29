@@ -53,8 +53,4 @@ stages:
         helmVersion: '2.14.1'
         installKubectl: true
 
-    - task: ExtractFiles@1
-      displayName: Extract Helm files
-      inputs:
-        archiveFilePatterns: 'helm-v3.14.4-linux-amd64.zip;'
     
