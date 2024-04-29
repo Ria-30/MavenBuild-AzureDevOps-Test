@@ -31,18 +31,18 @@ stages:
         sonarQubeRunAnalysis: false
       displayName: 'Maven Build'
 
-    # - task: Docker@2
-    #   displayName: 'Build and Push Docker Image'
-    #   inputs:
-    #     containerRegistry: $(dockerRegistryServiceConnection)
-    #     repository: 'riaoct30/tomcat-test'
-    #     command: 'buildAndPush'
-    #     Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
     - task: Docker@2
-      displayName: Docker Build&Push
+      displayName: 'Build and Push Docker Image'
       inputs:
-        containerRegistry: 'Contregsanga'
-        repository: 'tomcat-test'
+        containerRegistry: $(dockerRegistryServiceConnection)
+        repository: 'riaoct30/tomcat-test'
         command: 'buildAndPush'
-        Dockerfile: '**/Dockerfile'
+        Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+    # - task: Docker@2
+    #   displayName: Docker Build&Push
+    #   inputs:
+    #     containerRegistry: 'Contregsanga'
+    #     repository: 'tomcat-test'
+    #     command: 'buildAndPush'
+    #     Dockerfile: '**/Dockerfile'
       retryCountOnTaskFailure: 3
