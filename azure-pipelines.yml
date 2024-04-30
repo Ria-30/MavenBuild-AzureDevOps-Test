@@ -83,18 +83,18 @@ stages:
           trivy -v
           pwd
 
-#############################
+############################
 
 # Execute Trivy Scan and Copy the Scan Results in Artifacts Staging Directory
  
-#############################
-    # - task: CmdLine@2
-    #   displayName: Run AquaSec Trivy Scan and Copy to Artifacts Staging Directory
-    #   inputs:
-    #     script: | 
-    #       trivy image --exit-code 0 --severity LOW,MEDIUM $(dockerRegistryServiceConnection)/$(imageRepository):$(tag) > low-med.txt
-    #       trivy image --exit-code 1 --severity HIGH,CRITICAL $(dockerRegistryServiceConnection)/$(imageRepository):$(tag) > high-critical.txt
-    #       ls -l
+############################
+    - task: CmdLine@2
+      displayName: Run AquaSec Trivy Scan and Copy to Artifacts Staging Directory
+      inputs:
+        script: | 
+          trivy image --exit-code 0 --severity LOW,MEDIUM $(dockerRegistryServiceConnection)/$(imageRepository):$(tag) > low-med.txt
+          trivy image --exit-code 1 --severity HIGH,CRITICAL $(dockerRegistryServiceConnection)/$(imageRepository):$(tag) > high-critical.txt
+          ls -l
           
 #############################
 
@@ -107,6 +107,6 @@ stages:
       inputs:
         helmVersion: '2.14.1'
         installKubectl: true
-    - script: |
-        kubectl get nodes
+    # - script: |
+    #     kubectl get nodes
     
