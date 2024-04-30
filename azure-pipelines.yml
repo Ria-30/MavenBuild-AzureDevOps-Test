@@ -10,7 +10,7 @@ resources:
 variables:
   tag: '$(Build.BuildId)'
   dockerRegistryServiceConnection: 'DockerRegistry'  # Replace with your Docker registry service connection name
-
+  imageRepository: 'tomcat-test'
 stages:
 - stage: Build
   displayName: Build image
@@ -19,6 +19,11 @@ stages:
     displayName: Build
     pool: Default
     steps:
+#############################
+
+# Packaging the Code
+
+#############################
     - task: Maven@4
       inputs:
         mavenPomFile: 'pom.xml'
@@ -31,13 +36,26 @@ stages:
         sonarQubeRunAnalysis: false
       displayName: 'Maven Build'
 
+#############################
+
+# Build and Push Image to DockerHub
+ 
+#############################
     # - task: Docker@2
     #   displayName: 'Build and Push Docker Image'
     #   inputs:
     #     containerRegistry: $(dockerRegistryServiceConnection)
-    #     repository: 'riaoct30/tomcat-test'
+    #     repository: 'riaoct30/$(imageRepository)'
     #     command: 'buildAndPush'
     #     Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+          # tags: |
+          # $(tag)
+
+#############################
+
+# Build and Push Image to ACR
+ 
+#############################
     # - task: Docker@2
     #   displayName: Docker Build&Push
     #   inputs:
@@ -47,6 +65,43 @@ stages:
     #     Dockerfile: '**/Dockerfile'
       # retryCountOnTaskFailure: 3
     
+    
+#############################
+
+# Download and Install Aquasec Trivy
+ 
+#############################
+    - task: CmdLine@2
+      displayName: Download and Install Aquasec Trivy
+      inputs:
+        script: |
+          sudo apt-get install wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+          trivy -v
+          pwd
+
+#############################
+
+# Execute Trivy Scan and Copy the Scan Results in Artifacts Staging Directory
+ 
+#############################
+    # - task: CmdLine@2
+    #   displayName: Run AquaSec Trivy Scan and Copy to Artifacts Staging Directory
+    #   inputs:
+    #     script: | 
+    #       trivy image --exit-code 0 --severity LOW,MEDIUM $(dockerRegistryServiceConnection)/$(imageRepository):$(tag) > low-med.txt
+    #       trivy image --exit-code 1 --severity HIGH,CRITICAL $(dockerRegistryServiceConnection)/$(imageRepository):$(tag) > high-critical.txt
+    #       ls -l
+          
+#############################
+
+# Installing Helm and Kubernetes
+ 
+#############################
+
     - task: HelmInstaller@0
       displayName: Install Helm and Kubernetes
       inputs:
