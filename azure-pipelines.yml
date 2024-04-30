@@ -92,7 +92,7 @@ stages:
       displayName: Run AquaSec Trivy Scan and Copy to Artifacts Staging Directory
       inputs:
         script: | 
-          docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $dockerRegistryServiceConnection)/$(imageRepository):$(tag)
+          trivy image $(dockerRegistryServiceConnection)/$(imageRepository):$(tag)
           trivy image --exit-code 0 --severity LOW,MEDIUM $(dockerRegistryServiceConnection)/$(imageRepository):$(tag) > low-med.txt
           trivy image --exit-code 1 --severity HIGH,CRITICAL $(dockerRegistryServiceConnection)/$(imageRepository):$(tag) > high-critical.txt
           ls -l
