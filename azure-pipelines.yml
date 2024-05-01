@@ -110,7 +110,36 @@ stages:
         installKubectl: true
         # script: |
           # sudo apt install kubectl kubeadm kubelet kubernetes-cni -y
+
+#############################
+
+# Deploying Helm
+ 
+#############################
+    - task: HelmDeploy@0
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceConnection: 'kubeclust'
+        namespace: 'sanghamitra'
+        command: 'init'
+        canaryImage: true
     
+#############################
+
+# Using Help to Deploy to AKS cluster
+ 
+#############################
+    - task: HelmDeploy@0
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceConnection: 'kubeclust'
+        namespace: 'sanghamitra'
+        command: 'upgrade'
+        chartType: 'FilePath'
+        chartPath: '$(System.DefaultWorkingDirectory)/**/*.tgz'
+        chartVersion: '1.0'
+        releaseName: 'hello-world'
+        arguments: '--set image.repository=$(imageRepository) --set image.tag=$(tag)'
 #############################
 
 # Installing Kubectl on Agent Machine
@@ -128,12 +157,12 @@ stages:
 # Connecting to AKS Cluster
  
 #############################
-    - task: KubernetesManifest@1
-      inputs:
-        action: 'deploy'
-        connectionType: 'kubernetesServiceConnection'
-        kubernetesServiceConnection: 'kubeclust'
-        namespace: 'sanghamitra'
-        manifests: |
-         deployment.yaml
-         service.yaml
+    # - task: KubernetesManifest@1
+    #   inputs:
+    #     action: 'deploy'
+    #     connectionType: 'kubernetesServiceConnection'
+    #     kubernetesServiceConnection: 'kubeclust'
+    #     namespace: 'sanghamitra'
+    #     manifests: |
+    #      deployment.yaml
+    #      service.yaml
