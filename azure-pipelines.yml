@@ -108,6 +108,32 @@ stages:
       inputs:
         helmVersion: '2.14.1'
         installKubectl: true
-    # - script: |
-    #     kubectl get nodes
+        # script: |
+          # sudo apt install kubectl kubeadm kubelet kubernetes-cni -y
     
+#############################
+
+# Installing Kubectl on Agent Machine
+
+#############################
+    - task: KubectlInstaller@0
+      inputs:
+        kubectlVersion: 'latest'
+        script: |
+          kubectl get nodes
+
+
+#############################
+
+# Connecting to AKS Cluster
+ 
+#############################
+    - task: KubernetesManifest@1
+      inputs:
+        action: 'deploy'
+        connectionType: 'kubernetesServiceConnection'
+        kubernetesServiceConnection: 'kubeclust'
+        namespace: 'sanghamitra'
+        manifests: |
+         deployment.yaml
+         service.yaml
