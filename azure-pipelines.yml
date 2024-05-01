@@ -11,6 +11,7 @@ variables:
   tag: '$(Build.BuildId)'
   dockerRegistryServiceConnection: 'DockerRegistry'  # Replace with your Docker registry service connection name
   imageRepository: 'tomcat-test'
+  namespace: 'sanghamitra'
 stages:
 - stage: Build
   displayName: Build image
@@ -180,7 +181,7 @@ stages:
         action: 'deploy'
         connectionType: 'kubernetesServiceConnection'
         kubernetesServiceConnection: 'kubeclust'
-        namespace: 'sanghamitra'
+        namespace: $(namespace)
         strategy: 'canary'
         percentage: '0'
         manifests: 'deployment.yaml'
@@ -206,10 +207,11 @@ stages:
       inputs:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceEndpoint: 'kubeclust'
-        namespace: 'sanghamitra'
-        command: 'apply '
-        arguments: '-f'
+        namespace: $(namespace)
         secretType: 'dockerRegistry'
         containerRegistryType: 'Container Registry'
         dockerRegistryEndpoint: 'DockerRegistry'
- 
+        script: |
+          'kubectl apply -f deployment.yaml -n $(namespace)'
+          'kubectl get deployments -n $(namespace)'
+          'kubectl get pods -n $(namespace)'
