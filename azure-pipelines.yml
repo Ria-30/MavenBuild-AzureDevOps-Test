@@ -215,3 +215,8 @@ stages:
           'kubectl apply -f deployment.yaml -n $(namespace)'
           'kubectl get deployments -n $(namespace)'
           'kubectl get pods -n $(namespace)'
+    - task: CmdLine@1
+      inputs:
+        script: |
+          kubectl apply -f deployment.yaml -n $(namespace)
+          kubectl get deployments -n $(namespace)
