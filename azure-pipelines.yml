@@ -171,7 +171,39 @@ stages:
 
 #############################
 
-# 
+# Deploy to AKS Cluster
  
 #############################
-    
+    - task: KubernetesManifest@1
+      inputs:
+        action: 'deploy'
+        connectionType: 'kubernetesServiceConnection'
+        kubernetesServiceConnection: 'kubeclust'
+        namespace: 'sanghamitra'
+        strategy: 'canary'
+        percentage: '0'
+        manifests: 'deployment.yaml'
+  
+#############################
+
+# Kubectl Installer
+ 
+#############################
+    - task: KubectlInstaller@0
+      inputs:
+        kubectlVersion: 'latest'
+
+#############################
+
+# Kubectl Apply
+    - task: Kubernetes@1
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceEndpoint: 'kubeclust'
+        namespace: 'sanghamitra'
+        command: 'apply'
+        secretType: 'dockerRegistry'
+        containerRegistryType: 'Container Registry'
+        dockerRegistryEndpoint: 'DockerRegistry'
+ 
+#############################
