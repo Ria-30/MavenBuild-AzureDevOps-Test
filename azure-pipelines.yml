@@ -175,6 +175,7 @@ stages:
  
 #############################
     - task: KubernetesManifest@1
+      displayName: 'Deploy to AKS Cluster'
       inputs:
         action: 'deploy'
         connectionType: 'kubernetesServiceConnection'
@@ -190,20 +191,25 @@ stages:
  
 #############################
     - task: KubectlInstaller@0
+      displayName: 'Install Kubectl'
       inputs:
         kubectlVersion: 'latest'
 
 #############################
 
 # Kubectl Apply
+
+#############################
+ 
     - task: Kubernetes@1
+      displayName: 'Kubectl Apply'
       inputs:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceEndpoint: 'kubeclust'
         namespace: 'sanghamitra'
-        command: 'apply'
+        command: 'apply '
+        arguments: '-f'
         secretType: 'dockerRegistry'
         containerRegistryType: 'Container Registry'
         dockerRegistryEndpoint: 'DockerRegistry'
  
-#############################
