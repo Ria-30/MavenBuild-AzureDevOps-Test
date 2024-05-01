@@ -121,7 +121,7 @@ stages:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceConnection: 'kubeclust'
         namespace: 'sanghamitra'
-        command: 'init'
+        # command: 'init'
         canaryImage: true
     
 #############################
