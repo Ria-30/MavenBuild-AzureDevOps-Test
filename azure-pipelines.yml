@@ -117,11 +117,12 @@ stages:
  
 #############################
     - task: HelmDeploy@0
+      displayName: 'Helm Charts Display'
       inputs:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceConnection: 'kubeclust'
         namespace: 'sanghamitra'
-        # command: 'init'
+        command: 'list'
         canaryImage: true
     
 #############################
@@ -130,6 +131,7 @@ stages:
  
 #############################
     - task: HelmDeploy@0
+      displayName: 'Helm Artifact creation'
       inputs:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceConnection: 'kubeclust'
@@ -145,11 +147,11 @@ stages:
 # Installing Kubectl on Agent Machine
 
 #############################
-    - task: KubectlInstaller@0
-      inputs:
-        kubectlVersion: 'latest'
-        script: |
-          kubectl get nodes
+    # - task: KubectlInstaller@0
+    #   inputs:
+    #     kubectlVersion: 'latest'
+    #     script: |
+    #       kubectl get nodes
 
 
 #############################
