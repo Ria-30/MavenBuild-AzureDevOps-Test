@@ -1,8 +1,8 @@
-trigger:
-  branches:
-    include:
-     - feature
-     - master
+# trigger:
+#   branches:
+#     include:
+#      - feature
+#      - master
 
 resources:
 - repo: self
@@ -12,6 +12,11 @@ variables:
   dockerRegistryServiceConnection: 'DockerRegistry'  # Replace with your Docker registry service connection name
   imageRepository: 'tomcat-test'
   namespace: 'sanghamitra'
+  k8sdeployment: 'deployment.yaml'
+  DOCKER_HUB_USER: 'riaoct30'
+  DOCKER_HUB_PAT: 'docker@ria30'
+
+  
 stages:
 - stage: Build
   displayName: Build image
@@ -41,16 +46,75 @@ stages:
 
 # Build and Push Image to DockerHub
  
+# #############################
+#     - task: Docker@2
+#       displayName: 'Build and Push Docker Image'
+#       inputs:
+#         containerRegistry: $(dockerRegistryServiceConnection)
+#         repository: 'riaoct30/$(imageRepository)'
+#         command: 'buildAndPush'
+#         Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+#         tags: |
+#           $(tag)
+
+
 #############################
-    # - task: Docker@2
-    #   displayName: 'Build and Push Docker Image'
-    #   inputs:
-    #     containerRegistry: $(dockerRegistryServiceConnection)
-    #     repository: 'riaoct30/$(imageRepository)'
-    #     command: 'buildAndPush'
-    #     Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-          # tags: |
-          # $(tag)
+
+# Build Docker Image
+ 
+#############################
+
+    - task: Docker@2
+      displayName: Build Docker Image
+      inputs:
+        containerRegistry: 'DockerRegistry'
+        repository: 'riaoct30/$(imageRepository)'
+        command: 'build'
+        Dockerfile: '**/Dockerfile'
+        tag: |
+          $(tag)
+
+#############################
+
+# Scan Docker Image using Docker Scout
+ 
+#############################
+    
+    - task: CmdLine@2
+      displayName: ImageScan after Build
+      inputs:
+        script: |
+          curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+          # docker login -u $(DOCKER_HUB_USER) -p $(DOCKER_HUB_PAT)
+          docker scout cves riaoct30/$(imageRepository):$(tag) --exit-code --only-severity critical,high 
+
+#############################
+
+# Push to Docker Hub
+ 
+#############################
+    - task: Docker@2
+      displayName: 'Pushing to DockerHub'
+      inputs:
+        containerRegistry: 'DockerRegistry'
+        repository: 'riaoct30/$(imageRepository)'
+        command: 'push'
+        tags: |
+          $(tag)
+
+#############################
+
+# Scan Docker Image using Docker Scout
+ 
+#############################
+    
+    - task: CmdLine@2
+      displayName: Image Scan after Push
+      inputs:
+        script: |
+          curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+          docker login -u $(DOCKER_HUB_USER) -p $(DOCKER_HUB_PAT)
+          docker scout cves riaoct30/$(imageRepository):$(tag) --exit-code --only-severity critical,high
 
 #############################
 
@@ -61,131 +125,11 @@ stages:
     #   displayName: Docker Build&Push
     #   inputs:
     #     containerRegistry: 'Contregsanga'
-    #     repository: 'tomcat-test'
+    #     repository: $(imageRepository)
     #     command: 'buildAndPush'
     #     Dockerfile: '**/Dockerfile'
       # retryCountOnTaskFailure: 3
     
-    
-#############################
-
-# Download and Install Aquasec Trivy
- 
-#############################
-    # - task: CmdLine@2
-    #   displayName: Download and Install Aquasec Trivy
-    #   inputs:
-    #     script: |
-    #       sudo apt-get install wget apt-transport-https gnupg lsb-release
-    #       wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-    #       echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-    #       sudo apt-get update
-    #       sudo apt-get install trivy
-    #       trivy -v
-    #       pwd
-
-############################
-
-# Execute Trivy Scan and Copy the Scan Results in Artifacts Staging Directory
- 
-############################
-    # - task: CmdLine@2
-    #   displayName: Run AquaSec Trivy Scan and Copy to Artifacts Staging Directory
-    #   inputs:
-    #     script: | 
-    #       trivy image $(dockerRegistryServiceConnection)/$(imageRepository):$(tag)
-    #       trivy image --exit-code 0 --severity LOW,MEDIUM $(dockerRegistryServiceConnection)/$(imageRepository):$(tag) > low-med.txt
-    #       trivy image --exit-code 1 --severity HIGH,CRITICAL $(dockerRegistryServiceConnection)/$(imageRepository):$(tag) > high-critical.txt
-    #       ls -l
-          
-#############################
-
-# Installing Helm and Kubernetes
- 
-#############################
-
-    - task: HelmInstaller@0
-      displayName: Install Helm and Kubernetes
-      inputs:
-        helmVersion: '2.14.1'
-        installKubectl: true
-        # script: |
-          # sudo apt install kubectl kubeadm kubelet kubernetes-cni -y
-
-#############################
-
-# Deploying Helm
- 
-#############################
-    # - task: HelmDeploy@0
-    #   displayName: 'Helm Charts Display'
-    #   inputs:
-    #     connectionType: 'Kubernetes Service Connection'
-    #     kubernetesServiceConnection: 'kubeclust'
-    #     namespace: 'sanghamitra'
-    #     command: 'list'
-    #     canaryImage: true
-    
-#############################
-
-# Using Help to Deploy to AKS cluster
- 
-#############################
-    # - task: HelmDeploy@0
-    #   displayName: 'Helm Artifact creation'
-    #   inputs:
-    #     connectionType: 'Kubernetes Service Connection'
-    #     kubernetesServiceConnection: 'kubeclust'
-    #     namespace: 'sanghamitra'
-    #     command: 'upgrade'
-    #     chartType: 'FilePath'
-    #     chartPath: '$(System.DefaultWorkingDirectory)/**/*.tgz'
-    #     chartVersion: '1.0'
-    #     releaseName: 'hello-world'
-    #     arguments: '--set image.repository=$(imageRepository) --set image.tag=$(tag)'
-#############################
-
-# Installing Kubectl on Agent Machine
-
-#############################
-    # - task: KubectlInstaller@0
-    #   inputs:
-    #     kubectlVersion: 'latest'
-    #     script: |
-    #       kubectl get nodes
-
-
-#############################
-
-# Connecting to AKS Cluster
- 
-#############################
-    # - task: KubernetesManifest@1
-    #   inputs:
-    #     action: 'deploy'
-    #     connectionType: 'kubernetesServiceConnection'
-    #     kubernetesServiceConnection: 'kubeclust'
-    #     namespace: 'sanghamitra'
-    #     manifests: |
-    #      deployment.yaml
-    #      service.yaml
-
-#############################
-
-# Deploy to AKS Cluster
- 
-#############################
-    - task: KubernetesManifest@1
-      displayName: 'Deploy to AKS Cluster'
-      inputs:
-        action: 'deploy'
-        connectionType: 'kubernetesServiceConnection'
-        kubernetesServiceConnection: 'kubeclust'
-        namespace: $(namespace)
-        strategy: 'canary'
-        percentage: '0'
-        manifests: 'deployment.yaml'
-  
 #############################
 
 # Kubectl Installer
@@ -198,25 +142,72 @@ stages:
 
 #############################
 
+# Copy Files into Agent
+
+#############################
+    - task: CopyFiles@2
+      displayName: 'Copy Files to Agent'
+      inputs:
+        Contents: $(k8sdeployment)
+        TargetFolder: '$(build.artifactstagingdirectory)'
+
+#############################
+
+# Publish Build Artifact
+
+#############################
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Build Artifact'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+#############################
+
+# Deploy to AKS Cluster
+
+#############################
+    - task: KubernetesManifest@1
+      displayName: 'Deploy to AKS'
+      inputs:
+        action: 'deploy'
+        connectionType: 'kubernetesServiceConnection'
+        kubernetesServiceConnection: 'kubeclust'
+        namespace: $(namespace)
+        strategy: 'canary'
+        percentage: '0'
+        manifests: $(k8sdeployment)
+      
+#############################
+
 # Kubectl Apply
 
 #############################
- 
     - task: Kubernetes@1
-      displayName: 'Kubectl Apply'
+      displayName: 'Apply Deployments'
       inputs:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceEndpoint: 'kubeclust'
         namespace: $(namespace)
+        command: 'apply'
+        useConfigurationFile: true
+        configuration: $(k8sdeployment)
         secretType: 'dockerRegistry'
         containerRegistryType: 'Container Registry'
-        dockerRegistryEndpoint: 'DockerRegistry'
-        script: |
-          'kubectl apply -f deployment.yaml -n $(namespace)'
-          'kubectl get deployments -n $(namespace)'
-          'kubectl get pods -n $(namespace)'
-    - task: CmdLine@1
+
+
+#############################
+
+# Show External IP:PORT
+ 
+#############################
+    - task: Kubernetes@1
+      displayName: 'ExternalIP and Port'
       inputs:
-        script: |
-          kubectl apply -f deployment.yaml -n $(namespace)
-          kubectl get deployments -n $(namespace)
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceEndpoint: 'kubeclust'
+        namespace: '$(namespace)'
+        command: 'get'
+        arguments: 'svc'
+        secretType: 'dockerRegistry'
+        containerRegistryType: 'Container Registry'
