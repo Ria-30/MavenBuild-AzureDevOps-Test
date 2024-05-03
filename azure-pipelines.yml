@@ -1,7 +1,3 @@
-# Docker
-# Build a Docker image
-# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
-
 trigger:
   branches:
     include:
@@ -13,6 +9,14 @@ resources:
 
 variables:
   tag: '$(Build.BuildId)'
+  dockerRegistryServiceConnection: 'DockerRegistry'  
+  
+  imageRepository: 'tomcat-test'
+  namespace: 'sanghamitra'
+  k8sdeployment: 'deployment.yaml'
+  DOCKER_HUB_USER: 'riaoct30'
+  DOCKER_HUB_PAT: 'docker@ria30'
+
 
 stages:
 - stage: Build
@@ -20,9 +24,13 @@ stages:
   jobs:
   - job: Build
     displayName: Build
-    pool: 
-      vmImage: 'ubuntu-latest'
+    pool: Default
     steps:
+#############################
+
+# Packaging the Code
+
+#############################
     - task: Maven@4
       inputs:
         mavenPomFile: 'pom.xml'
@@ -33,57 +41,157 @@ stages:
         mavenAuthenticateFeed: false
         effectivePomSkip: false
         sonarQubeRunAnalysis: false
-    # - script: |
-    #     sudo apt-get update && sudo apt-get install -y maven
-    #     mvn clean install
-    #   displayName: 'Maven build'
+      displayName: 'Maven Build'
+
+#############################
+
+# Build Docker Image
+ 
+#############################
 
     - task: Docker@2
-      displayName: 'Login to Docker Hub'
+      displayName: Build Docker Image
       inputs:
         containerRegistry: 'DockerRegistry'
-        command: 'login'
+        repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
+        command: 'build'
+        Dockerfile: '**/Dockerfile'
+        tag: |
+          $(tag)
 
+#############################
+
+# Scan Docker Image using Docker Scout
+ 
+#############################
+    
+    - task: CmdLine@2
+      displayName: ImageScan after Build
+      inputs:
+        script: |
+          curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+          docker scout cves $(DOCKER_HUB_USER)/$(imageRepository):$(tag) --exit-code --only-severity critical,high 
+
+#############################
+
+# Push to Docker Hub
+ 
+#############################
     - task: Docker@2
+      displayName: 'Pushing to DockerHub'
       inputs:
         containerRegistry: 'DockerRegistry'
-        repository: 'riaoct30/tomcat-test'
-        command: 'buildAndPush'
-        Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-      retryCountOnTaskFailure: '1'
+        repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
+        command: 'push'
+        tags: |
+          $(tag)
 
+#############################
+
+# Scan Docker Image using Docker Scout
+ 
+#############################
+    
+    - task: CmdLine@2
+      displayName: Image Scan after Push
+      inputs:
+        script: |
+          curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+          docker login -u $(DOCKER_HUB_USER) -p $(DOCKER_HUB_PAT)
+          docker scout cves $(DOCKER_HUB_USER)/$(imageRepository):$(tag) --exit-code --only-severity critical,high
+
+#############################
+
+# Build and Push Image to ACR
+ 
+#############################
     # - task: Docker@2
-    #   displayName: 'Build and Push Docker Image'
+    #   displayName: Docker Build&Push
     #   inputs:
-    #     containerRegistry: 'DockerRegistry'
-    #     repository: 'riaoct30/tomcat-test'
-    #     command: buildAndPush
-    #     Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-    #   retryCountOnTaskFailure: '1'
+    #     containerRegistry: 'Contregsanga'
+    #     repository: $(imageRepository)
+    #     command: 'buildAndPush'
+    #     Dockerfile: '**/Dockerfile'
+      # retryCountOnTaskFailure: 3
+    
+#############################
+
+# Kubectl Installer
+ 
+#############################
+    - task: KubectlInstaller@0
+      displayName: 'Install Kubectl'
+      inputs:
+        kubectlVersion: 'latest'
+
+#############################
+
+# Copy Files into Agent
+
+#############################
+    - task: CopyFiles@2
+      displayName: 'Copy Files to Agent'
+      inputs:
+        Contents: $(k8sdeployment)
+        TargetFolder: '$(build.artifactstagingdirectory)'
+
+#############################
+
+# Publish Build Artifact
+
+#############################
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Build Artifact'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+#############################
+
+# Deploy to AKS Cluster
+
+#############################
+    - task: KubernetesManifest@1
+      displayName: 'Deploy to AKS'
+      inputs:
+        action: 'deploy'
+        connectionType: 'kubernetesServiceConnection'
+        kubernetesServiceConnection: 'kubeclust'
+        namespace: $(namespace)
+        strategy: 'canary'
+        percentage: '0'
+        manifests: $(k8sdeployment)
+      
+#############################
+
+# Kubectl Apply
+
+#############################
+    - task: Kubernetes@1
+      displayName: 'Apply Deployments'
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceEndpoint: 'kubeclust'
+        namespace: $(namespace)
+        command: 'apply'
+        useConfigurationFile: true
+        configuration: $(k8sdeployment)
+        secretType: 'dockerRegistry'
+        containerRegistryType: 'Container Registry'
 
 
+#############################
 
-
-    #- task: Maven@4
-    #  inputs:
-    #    mavenPomFile: 'pom.xml'
-    #    publishJUnitResults: true
-    #    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    #    javaHomeOption: 'JDKVersion'
-    #    mavenVersionOption: 'Default'
-    #    mavenAuthenticateFeed: false
-    #    effectivePomSkip: false
-    #    sonarQubeRunAnalysis: false
-    #- task: Docker@2
-    #  displayName: Build an image
-    #  inputs:
-    #    command: build
-    #    dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-    #    tags: |
-    #    command: start
-    #    container: test-1
-
-
-
-
-
+# Show External IP:PORT
+ 
+#############################
+    - task: Kubernetes@1
+      displayName: 'ExternalIP and Port'
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceEndpoint: 'kubeclust'
+        namespace: '$(namespace)'
+        command: 'get'
+        arguments: 'svc'
+        secretType: 'dockerRegistry'
+        containerRegistryType: 'Container Registry'
