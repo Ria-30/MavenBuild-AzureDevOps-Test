@@ -131,7 +131,7 @@ stages:
 #############################
     - task: CopyFiles@2
       inputs:
-        SourceFolder: 'base/'
+        SourceFolder: 'base'
         Contents: '$(k8sdeployment)'
         TargetFolder: '$(build.artifactstagingdirectory)'
 
