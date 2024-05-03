@@ -132,7 +132,7 @@ stages:
     - task: CopyFiles@2
       displayName: 'Copy Files to Agent'
       inputs:
-        Contents: $(k8sdeployment)
+        Contents: base/$(k8sdeployment)
         TargetFolder: '$(build.artifactstagingdirectory)'
 
 #############################
