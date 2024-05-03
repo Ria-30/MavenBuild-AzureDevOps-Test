@@ -1,22 +1,23 @@
-# trigger:
-#   branches:
-#     include:
-#      - feature
-#      - master
+trigger:
+  branches:
+    include:
+     - feature
+     - master
 
 resources:
 - repo: self
 
 variables:
   tag: '$(Build.BuildId)'
-  dockerRegistryServiceConnection: 'DockerRegistry'  # Replace with your Docker registry service connection name
+  dockerRegistryServiceConnection: 'DockerRegistry'  
+  
   imageRepository: 'tomcat-test'
   namespace: 'sanghamitra'
   k8sdeployment: 'deployment.yaml'
   DOCKER_HUB_USER: 'riaoct30'
   DOCKER_HUB_PAT: 'docker@ria30'
 
-  
+
 stages:
 - stage: Build
   displayName: Build image
@@ -44,22 +45,6 @@ stages:
 
 #############################
 
-# Build and Push Image to DockerHub
- 
-# #############################
-#     - task: Docker@2
-#       displayName: 'Build and Push Docker Image'
-#       inputs:
-#         containerRegistry: $(dockerRegistryServiceConnection)
-#         repository: 'riaoct30/$(imageRepository)'
-#         command: 'buildAndPush'
-#         Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-#         tags: |
-#           $(tag)
-
-
-#############################
-
 # Build Docker Image
  
 #############################
@@ -68,7 +53,7 @@ stages:
       displayName: Build Docker Image
       inputs:
         containerRegistry: 'DockerRegistry'
-        repository: 'riaoct30/$(imageRepository)'
+        repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
         command: 'build'
         Dockerfile: '**/Dockerfile'
         tag: |
@@ -85,8 +70,7 @@ stages:
       inputs:
         script: |
           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
-          # docker login -u $(DOCKER_HUB_USER) -p $(DOCKER_HUB_PAT)
-          docker scout cves riaoct30/$(imageRepository):$(tag) --exit-code --only-severity critical,high 
+          docker scout cves $(DOCKER_HUB_USER)/$(imageRepository):$(tag) --exit-code --only-severity critical,high 
 
 #############################
 
@@ -97,7 +81,7 @@ stages:
       displayName: 'Pushing to DockerHub'
       inputs:
         containerRegistry: 'DockerRegistry'
-        repository: 'riaoct30/$(imageRepository)'
+        repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
         command: 'push'
         tags: |
           $(tag)
@@ -114,7 +98,7 @@ stages:
         script: |
           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
           docker login -u $(DOCKER_HUB_USER) -p $(DOCKER_HUB_PAT)
-          docker scout cves riaoct30/$(imageRepository):$(tag) --exit-code --only-severity critical,high
+          docker scout cves $(DOCKER_HUB_USER)/$(imageRepository):$(tag) --exit-code --only-severity critical,high
 
 #############################
 
