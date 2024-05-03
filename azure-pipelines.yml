@@ -130,6 +130,7 @@ stages:
 
 #############################
     - task: CopyFiles@2
+      displayName: 'Copy to Agent'
       inputs:
         SourceFolder: 'base'
         Contents: '$(k8sdeployment)'
@@ -157,10 +158,10 @@ stages:
         action: 'deploy'
         connectionType: 'kubernetesServiceConnection'
         kubernetesServiceConnection: 'kubeclust'
-        namespace: $(namespace)
+        namespace: '$(namespace)'
         strategy: 'canary'
         percentage: '0'
-        manifests: $(k8sdeployment)
+        manifests: 'base/$(k8sdeployment)'
       
 #############################
 
