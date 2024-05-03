@@ -133,7 +133,7 @@ stages:
       inputs:
         SourceFolder: 'base/'
         Contents: '$(k8sdeployment)'
-        TargetFolder: 
+        TargetFolder: '$(build.artifactstagingdirectory)'
 
 #############################
 
