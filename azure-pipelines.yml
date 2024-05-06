@@ -130,9 +130,10 @@ stages:
 
 #############################
     - task: CopyFiles@2
-      displayName: 'Copy Files to Agent'
+      displayName: 'Copy to Agent'
       inputs:
-        Contents: $(k8sdeployment)
+        SourceFolder: 'base'
+        Contents: '$(k8sdeployment)'
         TargetFolder: '$(build.artifactstagingdirectory)'
 
 #############################
@@ -157,10 +158,10 @@ stages:
         action: 'deploy'
         connectionType: 'kubernetesServiceConnection'
         kubernetesServiceConnection: 'kubeclust'
-        namespace: $(namespace)
+        namespace: '$(namespace)'
         strategy: 'canary'
         percentage: '0'
-        manifests: $(k8sdeployment)
+        manifests: 'base/$(k8sdeployment)'
       
 #############################
 
@@ -175,7 +176,7 @@ stages:
         namespace: $(namespace)
         command: 'apply'
         useConfigurationFile: true
-        configuration: $(k8sdeployment)
+        configuration: base/$(k8sdeployment)
         secretType: 'dockerRegistry'
         containerRegistryType: 'Container Registry'
 
