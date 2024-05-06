@@ -117,13 +117,23 @@ stages:
     
 #############################
 
+# Kubernetes Installation
+ 
+#############################
+    - task: HelmInstaller@0
+      inputs:
+        helmVersion: '2.14.1'
+        installKubectl: true
+        
+#############################
+
 # Kubectl Installer
  
 #############################
-    - task: KubectlInstaller@0
-      displayName: 'Install Kubectl'
-      inputs:
-        kubectlVersion: 'latest'
+    # - task: KubectlInstaller@0
+    #   displayName: 'Install Kubectl'
+    #   inputs:
+    #     kubectlVersion: 'latest'
 
 #############################
 
