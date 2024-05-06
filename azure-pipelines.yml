@@ -67,7 +67,7 @@ stages:
 #############################
     
     - task: CmdLine@2
-      displayName: ImageScan after Build
+      displayName: DockerScout Build
       inputs:
         script: |
           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
@@ -94,7 +94,7 @@ stages:
 #############################
     
     - task: CmdLine@2
-      displayName: Image Scan after Push
+      displayName: DockerScout Scan-2
       inputs:
         script: |
           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
