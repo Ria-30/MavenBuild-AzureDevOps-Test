@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: hello-world
-        image: riaoct30/tomcat-test:55
+        image: riaoct30/tomcat-test
         ports:
         - containerPort: 8080
 
