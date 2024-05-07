@@ -15,6 +15,7 @@ spec:
       containers:
       - name: hello-world
         image: riaoct30/tomcat-test
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
 
