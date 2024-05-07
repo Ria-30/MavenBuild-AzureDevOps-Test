@@ -181,17 +181,27 @@ stages:
 # Kubectl Apply
 
 #############################
+    # - task: Kubernetes@1
+    #   displayName: 'Apply Deployments'
+    #   inputs:
+    #     connectionType: 'Kubernetes Service Connection'
+    #     kubernetesServiceEndpoint: '$(kubeClusterName)'
+    #     namespace: $(namespace)
+    #     command: 'apply'
+    #     useConfigurationFile: true
+    #     configuration: |
+    #       $(k8sdeployment)
+    #       $(k8sservice)
+    #     secretType: 'dockerRegistry'
+    #     containerRegistryType: 'Container Registry'
     - task: Kubernetes@1
       displayName: 'Apply Deployments'
       inputs:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceEndpoint: '$(kubeClusterName)'
-        namespace: $(namespace)
+        namespace: '$(namespace)'
         command: 'apply'
-        useConfigurationFile: true
-        configuration: |
-          $(k8sdeployment)
-          $(k8sservice)
+        arguments: '-f $(k8sdeployment) $(k8sservice)'
         secretType: 'dockerRegistry'
         containerRegistryType: 'Container Registry'
 
