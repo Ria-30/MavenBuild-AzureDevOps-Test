@@ -13,8 +13,8 @@ variables:
   imageRepository: 'tomcat-test'
   namespace: 'sanghamitra-azure-devops'
   kubeClusterName: 'vanshika-cluster'
-  k8sdeployment: 'deployment.yaml'
-  k8sservice: 'service.yaml'
+  k8sdeployment: 'base/deployment.yaml'
+  k8sservice: 'base/service.yaml'
   DOCKER_HUB_USER: 'riaoct30'
   DOCKER_HUB_PAT: 'docker@ria30'
 
