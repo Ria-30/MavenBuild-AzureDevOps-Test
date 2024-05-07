@@ -1,11 +1,7 @@
 trigger:
   branches:
     include:
-     - feature
      - master
-
-resources:
-- repo: self
 
 variables:
   tag: 'latest'
@@ -49,16 +45,6 @@ stages:
 # Build Docker Image
  
 #############################
-
-    # - task: Docker@2
-    #   displayName: Build Docker Image
-    #   inputs:
-    #     containerRegistry: 'DockerRegistry'
-    #     repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
-    #     command: 'build'
-    #     Dockerfile: '**/Dockerfile'
-    #     tag: |
-    #       $(tag)
     - task: Docker@2
       inputs:
         containerRegistry: 'DockerRegistry'
@@ -74,7 +60,7 @@ stages:
 #############################
     
     - task: CmdLine@2
-      displayName: DockerScout Build
+      displayName: DockerScout After Build Scan
       inputs:
         script: |
           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
@@ -101,7 +87,7 @@ stages:
 #############################
     
     - task: CmdLine@2
-      displayName: DockerScout Scan-2
+      displayName: DockerScout After Push Scan
       inputs:
         script: |
           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
@@ -135,16 +121,6 @@ stages:
         
 #############################
 
-# Kubectl Installer
- 
-#############################
-    # - task: KubectlInstaller@0
-    #   displayName: 'Install Kubectl'
-    #   inputs:
-    #     kubectlVersion: 'latest'
-
-#############################
-
 # Copy Files into Agent
 
 #############################
@@ -156,17 +132,6 @@ stages:
           $(k8sservice)
         TargetFolder: '$(build.artifactstagingdirectory)'
 
-#############################
-
-# Publish Build Artifact
-
-#############################
-    # - task: PublishBuildArtifacts@1
-    #   displayName: 'Publish Build Artifact'
-    #   inputs:
-    #     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    #     ArtifactName: 'drop'
-    #     publishLocation: 'Container'
 #############################
 
 # Deploy to AKS Cluster
@@ -186,7 +151,7 @@ stages:
       
 #############################
 
-# Kubectl Apply
+# Kubectl Apply Deployment and Service
 
 #############################
     - task: Kubernetes@1
