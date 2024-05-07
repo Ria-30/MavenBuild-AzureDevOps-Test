@@ -11,7 +11,7 @@ variables:
   tag: '$(Build.BuildId)'
   dockerRegistryServiceConnection: 'DockerRegistry'  
   imageRepository: 'tomcat-test'
-  namespace: 'sanghamitra-azure-devops'
+  namespace: 'sanghamitra-azr-dev'
   kubeClusterName: 'vanshika-cluster'
   k8sdeployment: 'base/deployment.yaml'
   k8sservice: 'base/service.yaml'
