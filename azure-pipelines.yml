@@ -8,13 +8,12 @@ resources:
 - repo: self
 
 variables:
-  tag: '$(Build.BuildId)'
+  tag: 'latest'
   dockerRegistryServiceConnection: 'DockerRegistry'  
   imageRepository: 'tomcat-test'
   namespace: 'sanghamitra-azr-dev'
   kubeClusterName: 'vanshika-cluster'
   k8sdeployment: 'base/deployment.yaml'
-  k8skustomization: 'base/kustomization.yaml'
   k8sservice: 'base/service.yaml'
   DOCKER_HUB_USER: 'riaoct30'
   DOCKER_HUB_PAT: 'docker@ria30'
@@ -122,6 +121,7 @@ stages:
  
 #############################
     - task: HelmInstaller@0
+      displayName: 'Install Kubectl'
       inputs:
         helmVersion: '2.14.1'
         installKubectl: true
@@ -147,7 +147,6 @@ stages:
         Contents: |
           $(k8sdeployment)
           $(k8sservice)
-          $(k8skustomization)
         TargetFolder: '$(build.artifactstagingdirectory)'
 
 #############################
@@ -177,34 +176,30 @@ stages:
         manifests: |
           $(k8sdeployment)
           $(k8sservice)
-          $(k8skustomization)
       
 #############################
 
 # Kubectl Apply
 
 #############################
-    # - task: Kubernetes@1
-    #   displayName: 'Apply Deployments'
-    #   inputs:
-    #     connectionType: 'Kubernetes Service Connection'
-    #     kubernetesServiceEndpoint: '$(kubeClusterName)'
-    #     namespace: $(namespace)
-    #     command: 'apply'
-    #     useConfigurationFile: true
-    #     configuration: |
-    #       $(k8sdeployment)
-    #       $(k8sservice)
-    #     secretType: 'dockerRegistry'
-    #     containerRegistryType: 'Container Registry'
     - task: Kubernetes@1
-      displayName: 'Apply Deployments'
+      displayName: 'Apply Deployment'
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceEndpoint: '$(kubeClusterName)'
+        namespace: $(namespace)
+        command: 'apply'
+        arguments: '-f $(k8sdeployment)'
+        secretType: 'dockerRegistry'
+        containerRegistryType: 'Container Registry'
+    - task: Kubernetes@1
+      displayName: 'Apply Service'
       inputs:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceEndpoint: '$(kubeClusterName)'
         namespace: '$(namespace)'
         command: 'apply'
-        arguments: '-f $(k8skustomization)'
+        arguments: '-f $(k8sservice)'
         secretType: 'dockerRegistry'
         containerRegistryType: 'Container Registry'
 
