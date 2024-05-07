@@ -191,7 +191,7 @@ stages:
         useConfigurationFile: true
         configuration: |
           $(k8sdeployment)
-          $k8sservice)
+          $(k8sservice)
         secretType: 'dockerRegistry'
         containerRegistryType: 'Container Registry'
 
