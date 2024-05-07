@@ -14,6 +14,7 @@ variables:
   namespace: 'sanghamitra-azr-dev'
   kubeClusterName: 'vanshika-cluster'
   k8sdeployment: 'base/deployment.yaml'
+  k8skustomization: 'base/kustomization.yaml'
   k8sservice: 'base/service.yaml'
   DOCKER_HUB_USER: 'riaoct30'
   DOCKER_HUB_PAT: 'docker@ria30'
@@ -146,6 +147,7 @@ stages:
         Contents: |
           $(k8sdeployment)
           $(k8sservice)
+          $(k8skustomization)
         TargetFolder: '$(build.artifactstagingdirectory)'
 
 #############################
@@ -175,6 +177,7 @@ stages:
         manifests: |
           $(k8sdeployment)
           $(k8sservice)
+          $(k8skustomization)
       
 #############################
 
@@ -201,7 +204,7 @@ stages:
         kubernetesServiceEndpoint: '$(kubeClusterName)'
         namespace: '$(namespace)'
         command: 'apply'
-        arguments: '-f $(k8sdeployment) $(k8sservice)'
+        arguments: '-f $(k8skustomization)'
         secretType: 'dockerRegistry'
         containerRegistryType: 'Container Registry'
 
