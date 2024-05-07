@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: hello-world
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: hello-world
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: hello-world
-        image: riaoct30/tomcat-test:55
+        image: riaoct30/tomcat-test
         ports:
         - containerPort: 8080
 
