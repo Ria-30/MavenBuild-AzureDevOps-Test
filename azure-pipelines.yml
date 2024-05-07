@@ -50,15 +50,22 @@ stages:
  
 #############################
 
+    # - task: Docker@2
+    #   displayName: Build Docker Image
+    #   inputs:
+    #     containerRegistry: 'DockerRegistry'
+    #     repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
+    #     command: 'build'
+    #     Dockerfile: '**/Dockerfile'
+    #     tag: |
+    #       $(tag)
     - task: Docker@2
-      displayName: Build Docker Image
       inputs:
         containerRegistry: 'DockerRegistry'
         repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
         command: 'build'
         Dockerfile: '**/Dockerfile'
-        tag: |
-          $(tag)
+        tags: 'latest'
 
 #############################
 
