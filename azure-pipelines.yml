@@ -1,19 +1,16 @@
 trigger:
   branches:
     include:
-     - feature
      - master
 
-resources:
-- repo: self
-
 variables:
-  tag: '$(Build.BuildId)'
+  tag: 'latest'
   dockerRegistryServiceConnection: 'DockerRegistry'  
-  
   imageRepository: 'tomcat-test'
-  namespace: 'sanghamitra'
-  k8sdeployment: 'deployment.yaml'
+  namespace: 'sanghamitra-azr-dev'
+  kubeClusterName: 'vanshika-cluster'
+  k8sdeployment: 'base/deployment.yaml'
+  k8sservice: 'base/service.yaml'
   DOCKER_HUB_USER: 'riaoct30'
   DOCKER_HUB_PAT: 'docker@ria30'
 
@@ -48,16 +45,13 @@ stages:
 # Build Docker Image
  
 #############################
-
     - task: Docker@2
-      displayName: Build Docker Image
       inputs:
         containerRegistry: 'DockerRegistry'
         repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
         command: 'build'
         Dockerfile: '**/Dockerfile'
-        tag: |
-          $(tag)
+        tags: 'latest'
 
 #############################
 
@@ -66,7 +60,7 @@ stages:
 #############################
     
     - task: CmdLine@2
-      displayName: ImageScan after Build
+      displayName: DockerScout After Build Scan
       inputs:
         script: |
           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
@@ -93,7 +87,7 @@ stages:
 #############################
     
     - task: CmdLine@2
-      displayName: Image Scan after Push
+      displayName: DockerScout After Push Scan
       inputs:
         script: |
           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
@@ -116,37 +110,28 @@ stages:
     
 #############################
 
-# Kubectl Installer
+# Kubernetes Installation
  
 #############################
-    - task: KubectlInstaller@0
+    - task: HelmInstaller@0
       displayName: 'Install Kubectl'
       inputs:
-        kubectlVersion: 'latest'
-
+        helmVersion: '2.14.1'
+        installKubectl: true
+        
 #############################
 
 # Copy Files into Agent
 
 #############################
     - task: CopyFiles@2
-      displayName: 'Copy to Agent'
+      displayName: 'Copy Files to Agent'
       inputs:
-        SourceFolder: 'base'
-        Contents: '$(k8sdeployment)'
+        Contents: |
+          $(k8sdeployment)
+          $(k8sservice)
         TargetFolder: '$(build.artifactstagingdirectory)'
 
-#############################
-
-# Publish Build Artifact
-
-#############################
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Build Artifact'
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'drop'
-        publishLocation: 'Container'
 #############################
 
 # Deploy to AKS Cluster
@@ -157,26 +142,36 @@ stages:
       inputs:
         action: 'deploy'
         connectionType: 'kubernetesServiceConnection'
-        kubernetesServiceConnection: 'kubeclust'
-        namespace: '$(namespace)'
-        strategy: 'canary'
+        kubernetesServiceConnection: '$(kubeClusterName)'
+        namespace: $(namespace)
         percentage: '0'
-        manifests: 'base/$(k8sdeployment)'
+        manifests: |
+          $(k8sdeployment)
+          $(k8sservice)
       
 #############################
 
-# Kubectl Apply
+# Kubectl Apply Deployment and Service
 
 #############################
     - task: Kubernetes@1
-      displayName: 'Apply Deployments'
+      displayName: 'Apply Deployment'
       inputs:
         connectionType: 'Kubernetes Service Connection'
-        kubernetesServiceEndpoint: 'kubeclust'
+        kubernetesServiceEndpoint: '$(kubeClusterName)'
         namespace: $(namespace)
         command: 'apply'
-        useConfigurationFile: true
-        configuration: base/$(k8sdeployment)
+        arguments: '-f $(k8sdeployment)'
+        secretType: 'dockerRegistry'
+        containerRegistryType: 'Container Registry'
+    - task: Kubernetes@1
+      displayName: 'Apply Service'
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceEndpoint: '$(kubeClusterName)'
+        namespace: '$(namespace)'
+        command: 'apply'
+        arguments: '-f $(k8sservice)'
         secretType: 'dockerRegistry'
         containerRegistryType: 'Container Registry'
 
@@ -190,7 +185,7 @@ stages:
       displayName: 'ExternalIP and Port'
       inputs:
         connectionType: 'Kubernetes Service Connection'
-        kubernetesServiceEndpoint: 'kubeclust'
+        kubernetesServiceEndpoint: '$(kubeClusterName)'
         namespace: '$(namespace)'
         command: 'get'
         arguments: 'svc'
