@@ -3,5 +3,4 @@ kind: Kustomization
 namespace: sanghamitra-nm-feature
 resources:
 - deployment.yaml
-- imagePolicy.yaml
 - service.yaml
