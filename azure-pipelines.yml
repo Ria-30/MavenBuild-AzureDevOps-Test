@@ -62,6 +62,7 @@ stages:
       inputs:
         script: |
           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+          docker login -u $(DOCKER_HUB_USER) -p $(DOCKER_HUB_PAT)
           docker scout cves $(DOCKER_HUB_USER)/$(imageRepository):$(tag) --exit-code --only-severity critical,high 
 
 #############################
