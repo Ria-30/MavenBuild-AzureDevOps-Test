@@ -1,7 +1,5 @@
 trigger:
-  branches:
-    include:
-     - master
+  - none
 
 variables:
   tag: 'latest'
@@ -21,7 +19,8 @@ stages:
   jobs:
   - job: Build
     displayName: Build
-    pool: Default
+    pool: 
+      vmImage: ubuntu-latest
     steps:
 #############################
 
