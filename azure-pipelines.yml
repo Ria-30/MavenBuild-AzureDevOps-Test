@@ -9,7 +9,7 @@ variables:
   k8sdeployment: 'base/deployment.yaml'
   k8sservice: 'base/service.yaml'
   DOCKER_HUB_USER: 'riaoct30'
-  DOCKER_HUB_PAT: 'docker@ria30'
+  DOCKER_HUB_PAT: '************'
 
 
 stages:
