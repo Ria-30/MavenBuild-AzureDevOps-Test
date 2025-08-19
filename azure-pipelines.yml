@@ -22,21 +22,23 @@ stages:
       vmImage: ubuntu-latest
     steps:
     - task: Bash@3
-      displayName: "Dump OIDC Token Claims"
+      displayName: "Request OIDC Token"
       inputs:
-       targetType: inline
-       script: |
-         echo "Requesting OIDC token from Azure DevOps..."
-         TOKEN_RESPONSE=$(curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" "${SYSTEM_OIDCTOKENURI}&audience=api://AzureADTokenExchange")
-         ID_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.id_token')
-         if [ -z "$ID_TOKEN" ] || [ "$ID_TOKEN" == "null" ]; then
-           echo "❌ No OIDC token received"
-           exit 1
-         fi
-         echo "✅ OIDC token received. Decoding..."
-         PAYLOAD=$(echo $ID_TOKEN | cut -d "." -f2 | base64 -d 2>/dev/null | jq)
-         echo "---- OIDC Token Claims ----"
-         echo "$PAYLOAD" | jq '{iss, sub, aud, exp, iat}'
+        targetType: inline
+        script: |
+          echo "Requesting OIDC token from Azure DevOps..."
+
+          # Use the built-in Azure DevOps OIDC service connection endpoint
+          OIDC_TOKEN=$(az pipelines identity get-access-token --output json)
+
+          if [ -z "$OIDC_TOKEN" ] || [ "$OIDC_TOKEN" == "null" ]; then
+            echo "❌ No OIDC token received"
+            exit 1
+          fi
+
+          echo "✅ OIDC token received."
+          echo "$OIDC_TOKEN" | jq
+
   
 #     steps:
 # #############################
