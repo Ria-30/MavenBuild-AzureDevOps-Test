@@ -1,15 +1,15 @@
 trigger: none
 
-variables:
-  tag: 'latest'
-  dockerRegistryServiceConnection: 'DockerRegistry'  
-  imageRepository: 'tomcat-test'
-  namespace: 'sanghamitra-azr-dev'
-  kubeClusterName: 'vanshika-cluster'
-  k8sdeployment: 'base/deployment.yaml'
-  k8sservice: 'base/service.yaml'
-  DOCKER_HUB_USER: 'riaoct30'
-  DOCKER_HUB_PAT: '************'
+# variables:
+#   tag: 'latest'
+#   dockerRegistryServiceConnection: 'DockerRegistry'  
+#   imageRepository: 'tomcat-test'
+#   namespace: 'sanghamitra-azr-dev'
+#   kubeClusterName: 'vanshika-cluster'
+#   k8sdeployment: 'base/deployment.yaml'
+#   k8sservice: 'base/service.yaml'
+#   DOCKER_HUB_USER: 'riaoct30'
+#   DOCKER_HUB_PAT: '************'
 
 
 stages:
@@ -21,172 +21,193 @@ stages:
     pool: 
       vmImage: ubuntu-latest
     steps:
-#############################
-
-# Packaging the Code
-
-#############################
-    - task: Maven@4
+    - task: Bash@3
+      displayName: "Dump OIDC Token Claims"
       inputs:
-        mavenPomFile: 'pom.xml'
-        publishJUnitResults: true
-        testResultsFiles: '**/surefire-reports/TEST-*.xml'
-        javaHomeOption: 'JDKVersion'
-        mavenVersionOption: 'Default'
-        mavenAuthenticateFeed: false
-        effectivePomSkip: false
-        sonarQubeRunAnalysis: false
-      displayName: 'Maven Build'
+       targetType: inline
+       script: |
+         echo "Requesting OIDC token from Azure DevOps..."
+         TOKEN_RESPONSE=$(curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" "${SYSTEM_OIDCTOKENURI}&audience=api://AzureADTokenExchange")
+         ID_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.id_token')
+         if [ -z "$ID_TOKEN" ] || [ "$ID_TOKEN" == "null" ]; then
+           echo "❌ No OIDC token received"
+           exit 1
+         fi
+         echo "✅ OIDC token received. Decoding..."
+         PAYLOAD=$(echo $ID_TOKEN | cut -d "." -f2 | base64 -d 2>/dev/null | jq)
+         echo "---- OIDC Token Claims ----"
+         echo "$PAYLOAD" | jq '{iss, sub, aud, exp, iat}'
+  
+#     steps:
+# #############################
 
-#############################
+# # Packaging the Code
 
-# Build Docker Image
+# #############################
+#     - task: Maven@4
+#       inputs:
+#         mavenPomFile: 'pom.xml'
+#         publishJUnitResults: true
+#         testResultsFiles: '**/surefire-reports/TEST-*.xml'
+#         javaHomeOption: 'JDKVersion'
+#         mavenVersionOption: 'Default'
+#         mavenAuthenticateFeed: false
+#         effectivePomSkip: false
+#         sonarQubeRunAnalysis: false
+#       displayName: 'Maven Build'
+
+# #############################
+
+# # Build Docker Image
  
-#############################
-    - task: Docker@2
-      inputs:
-        containerRegistry: 'DockerRegistry'
-        repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
-        command: 'build'
-        Dockerfile: '**/Dockerfile'
-        tags: 'latest'
+# #############################
+#     - task: Docker@2
+#       inputs:
+#         containerRegistry: 'DockerRegistry'
+#         repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
+#         command: 'build'
+#         Dockerfile: '**/Dockerfile'
+#         tags: 'latest'
 
-#############################
+# #############################
 
-# Scan Docker Image using Docker Scout
+# # Scan Docker Image using Docker Scout
  
-#############################
+# #############################
     
-    - task: CmdLine@2
-      displayName: DockerScout After Build Scan
-      inputs:
-        script: |
-          curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
-          docker login -u $(DOCKER_HUB_USER) -p $(DOCKER_HUB_PAT)
-          docker scout cves $(DOCKER_HUB_USER)/$(imageRepository):$(tag) --exit-code --only-severity critical,high 
+#     - task: CmdLine@2
+#       displayName: DockerScout After Build Scan
+#       inputs:
+#         script: |
+#           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+#           docker login -u $(DOCKER_HUB_USER) -p $(DOCKER_HUB_PAT)
+#           docker scout cves $(DOCKER_HUB_USER)/$(imageRepository):$(tag) --exit-code --only-severity critical,high 
 
-#############################
+# #############################
 
-# Push to Docker Hub
+# # Push to Docker Hub
  
-#############################
-    - task: Docker@2
-      displayName: 'Pushing to DockerHub'
-      inputs:
-        containerRegistry: 'DockerRegistry'
-        repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
-        command: 'push'
-        tags: |
-          $(tag)
+# #############################
+#     - task: Docker@2
+#       displayName: 'Pushing to DockerHub'
+#       inputs:
+#         containerRegistry: 'DockerRegistry'
+#         repository: '$(DOCKER_HUB_USER)/$(imageRepository)'
+#         command: 'push'
+#         tags: |
+#           $(tag)
 
-#############################
+# #############################
 
-# Scan Docker Image using Docker Scout
+# # Scan Docker Image using Docker Scout
  
-#############################
+# #############################
     
-    - task: CmdLine@2
-      displayName: DockerScout After Push Scan
-      inputs:
-        script: |
-          curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
-          docker login -u $(DOCKER_HUB_USER) -p $(DOCKER_HUB_PAT)
-          docker scout cves $(DOCKER_HUB_USER)/$(imageRepository):$(tag) --exit-code --only-severity critical,high
+#     - task: CmdLine@2
+#       displayName: DockerScout After Push Scan
+#       inputs:
+#         script: |
+#           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+#           docker login -u $(DOCKER_HUB_USER) -p $(DOCKER_HUB_PAT)
+#           docker scout cves $(DOCKER_HUB_USER)/$(imageRepository):$(tag) --exit-code --only-severity critical,high
 
-#############################
+# #############################
 
-# Build and Push Image to ACR
+# # Build and Push Image to ACR
  
-#############################
-    # - task: Docker@2
-    #   displayName: Docker Build&Push
-    #   inputs:
-    #     containerRegistry: 'Contregsanga'
-    #     repository: $(imageRepository)
-    #     command: 'buildAndPush'
-    #     Dockerfile: '**/Dockerfile'
-      # retryCountOnTaskFailure: 3
+# #############################
+#     # - task: Docker@2
+#     #   displayName: Docker Build&Push
+#     #   inputs:
+#     #     containerRegistry: 'Contregsanga'
+#     #     repository: $(imageRepository)
+#     #     command: 'buildAndPush'
+#     #     Dockerfile: '**/Dockerfile'
+#       # retryCountOnTaskFailure: 3
     
-#############################
+# #############################
 
-# Kubernetes Installation
+# # Kubernetes Installation
  
-#############################
-    - task: HelmInstaller@0
-      displayName: 'Install Kubectl'
-      inputs:
-        helmVersion: '2.14.1'
-        installKubectl: true
+# #############################
+#     - task: HelmInstaller@0
+#       displayName: 'Install Kubectl'
+#       inputs:
+#         helmVersion: '2.14.1'
+#         installKubectl: true
         
-#############################
+# #############################
 
-# Copy Files into Agent
+# # Copy Files into Agent
 
-#############################
-    - task: CopyFiles@2
-      displayName: 'Copy Files to Agent'
-      inputs:
-        Contents: |
-          $(k8sdeployment)
-          $(k8sservice)
-        TargetFolder: '$(build.artifactstagingdirectory)'
+# #############################
+#     - task: CopyFiles@2
+#       displayName: 'Copy Files to Agent'
+#       inputs:
+#         Contents: |
+#           $(k8sdeployment)
+#           $(k8sservice)
+#         TargetFolder: '$(build.artifactstagingdirectory)'
 
-#############################
+# #############################
 
-# Deploy to AKS Cluster
+# # Deploy to AKS Cluster
 
-#############################
-    - task: KubernetesManifest@1
-      displayName: 'Deploy to AKS'
-      inputs:
-        action: 'deploy'
-        connectionType: 'kubernetesServiceConnection'
-        kubernetesServiceConnection: '$(kubeClusterName)'
-        namespace: $(namespace)
-        percentage: '0'
-        manifests: |
-          $(k8sdeployment)
-          $(k8sservice)
+# #############################
+#     - task: KubernetesManifest@1
+#       displayName: 'Deploy to AKS'
+#       inputs:
+#         action: 'deploy'
+#         connectionType: 'kubernetesServiceConnection'
+#         kubernetesServiceConnection: '$(kubeClusterName)'
+#         namespace: $(namespace)
+#         percentage: '0'
+#         manifests: |
+#           $(k8sdeployment)
+#           $(k8sservice)
       
-#############################
+# #############################
 
-# Kubectl Apply Deployment and Service
+# # Kubectl Apply Deployment and Service
 
-#############################
-    - task: Kubernetes@1
-      displayName: 'Apply Deployment'
-      inputs:
-        connectionType: 'Kubernetes Service Connection'
-        kubernetesServiceEndpoint: '$(kubeClusterName)'
-        namespace: $(namespace)
-        command: 'apply'
-        arguments: '-f $(k8sdeployment)'
-        secretType: 'dockerRegistry'
-        containerRegistryType: 'Container Registry'
-    - task: Kubernetes@1
-      displayName: 'Apply Service'
-      inputs:
-        connectionType: 'Kubernetes Service Connection'
-        kubernetesServiceEndpoint: '$(kubeClusterName)'
-        namespace: '$(namespace)'
-        command: 'apply'
-        arguments: '-f $(k8sservice)'
-        secretType: 'dockerRegistry'
-        containerRegistryType: 'Container Registry'
+# #############################
+#     - task: Kubernetes@1
+#       displayName: 'Apply Deployment'
+#       inputs:
+#         connectionType: 'Kubernetes Service Connection'
+#         kubernetesServiceEndpoint: '$(kubeClusterName)'
+#         namespace: $(namespace)
+#         command: 'apply'
+#         arguments: '-f $(k8sdeployment)'
+#         secretType: 'dockerRegistry'
+#         containerRegistryType: 'Container Registry'
+#     - task: Kubernetes@1
+#       displayName: 'Apply Service'
+#       inputs:
+#         connectionType: 'Kubernetes Service Connection'
+#         kubernetesServiceEndpoint: '$(kubeClusterName)'
+#         namespace: '$(namespace)'
+#         command: 'apply'
+#         arguments: '-f $(k8sservice)'
+#         secretType: 'dockerRegistry'
+#         containerRegistryType: 'Container Registry'
 
 
-#############################
+# #############################
 
-# Show External IP:PORT
+# # Show External IP:PORT
  
-#############################
-    - task: Kubernetes@1
-      displayName: 'ExternalIP and Port'
-      inputs:
-        connectionType: 'Kubernetes Service Connection'
-        kubernetesServiceEndpoint: '$(kubeClusterName)'
-        namespace: '$(namespace)'
-        command: 'get'
-        arguments: 'svc'
-        secretType: 'dockerRegistry'
-        containerRegistryType: 'Container Registry'
+# #############################
+#     - task: Kubernetes@1
+#       displayName: 'ExternalIP and Port'
+#       inputs:
+#         connectionType: 'Kubernetes Service Connection'
+#         kubernetesServiceEndpoint: '$(kubeClusterName)'
+#         namespace: '$(namespace)'
+#         command: 'get'
+#         arguments: 'svc'
+#         secretType: 'dockerRegistry'
+#         containerRegistryType: 'Container Registry'
+
+
+
