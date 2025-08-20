@@ -4,31 +4,30 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-  - checkout: none
-
   - task: Bash@3
-    displayName: "Request OIDC Token"
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    displayName: "Request OIDC token"
     inputs:
       targetType: inline
       script: |
-        echo "Requesting OIDC token from Azure DevOps..."
+        # Request an OIDC token from Azure DevOps
+        OIDC_RESPONSE=$(curl -s -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+          "$SYSTEM_OIDCREQUESTURI&audience=api://AzureADTokenExchange")
 
-        # Request an OIDC token with audience = api://AzureADTokenExchange
-        TOKEN_RESPONSE=$(curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
-          "${SYSTEM_OIDCREQUESTURI}?audience=api://AzureADTokenExchange")
+        OIDC_TOKEN=$(echo $OIDC_RESPONSE | jq -r '.value')
 
-        ID_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.id_token')
+        echo "OIDC_TOKEN=$OIDC_TOKEN" >> $BASH_ENV
 
-        if [ -z "$ID_TOKEN" ] || [ "$ID_TOKEN" == "null" ]; then
-          echo "❌ No OIDC token received"
-          echo "Full response: $TOKEN_RESPONSE"
-          exit 1
-        fi
+  - task: Bash@3
+    displayName: "Show OIDC Token Claims"
+    inputs:
+      targetType: inline
+      script: |
+        echo "Truncated OIDC token: ${OIDC_TOKEN:0:50}..."
 
-        echo "✅ OIDC token received. Decoding claims..."
-        echo $ID_TOKEN | cut -d "." -f2 | base64 -d 2>/dev/null | jq '{iss, sub, aud, iat, exp}'
+        PAYLOAD=$(echo $OIDC_TOKEN | cut -d "." -f2 | base64 -d 2>/dev/null | jq)
+        echo "Decoded claims:"
+        echo "$PAYLOAD"
+
 
 # trigger: none
 
