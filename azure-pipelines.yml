@@ -15,17 +15,21 @@ steps:
 
         OIDC_TOKEN=$(echo $OIDC_RESPONSE | jq -r '.value')
 
-        echo "OIDC_TOKEN=$OIDC_TOKEN" >> $BASH_ENV
+        # Export for this job
+        export OIDC_TOKEN
+
+        # Or set as pipeline variable (available to later steps)
+        echo "##vso[task.setvariable variable=OIDC_TOKEN;isOutput=true]$OIDC_TOKEN"
+
+        echo "Truncated OIDC token: ${OIDC_TOKEN:0:50}..."
 
   - task: Bash@3
     displayName: "Show OIDC Token Claims"
     inputs:
       targetType: inline
       script: |
-        echo "Truncated OIDC token: ${OIDC_TOKEN:0:50}..."
-
-        PAYLOAD=$(echo $OIDC_TOKEN | cut -d "." -f2 | base64 -d 2>/dev/null | jq)
-        echo "Decoded claims:"
+        echo "Decoding OIDC token payload..."
+        PAYLOAD=$(echo "$OIDC_TOKEN" | cut -d "." -f2 | base64 -d 2>/dev/null | jq)
         echo "$PAYLOAD"
 
 
