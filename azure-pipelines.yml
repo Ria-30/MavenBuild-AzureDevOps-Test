@@ -8,28 +8,16 @@ variables:
 
 
 steps:
-  - task: Bash@3
-    displayName: "Fetch & Decode OIDC Token"
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    inputs:
-      targetType: inline
-      script: |
-        echo "Requesting OIDC token from Azure DevOps..."
-        token=$(curl -sSf -X POST -d '' -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -H "Content-Type: application/json" --data '{"audience":"api://AzureADTokenExchange"}' "$SYSTEM_OIDCREQUESTURI?api-version-7.1-preview.1")
-        echo "Got raw response: $token"
-        id_token=$(echo "$token" | jq -r '.id_token')
-        echo "Got OIDC token of length: ${#token}"
-
-        if [ -z "$id_token" ] || [ "$id_token" = "null" ]; then
-          echo "No token received"
-          exit 1
-        fi
-        
-        echo "Decoding OIDC token payload..."
-        payload=$(echo "$id_token" | cut -d "." -f2 | base64 -d 2>/dev/null)
-        echo "$payload"
-
+- script: |
+    echo "## Getting DevOps OIDC token"
+    oidc_token=$(curl -sSL -H "Accept: application/json; api-version=7.1" \ 
+      "${SYSTEM_OIDCREQUESTURI}?api-version=7.1" \
+      -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+      -H "Content-Length: 0" \ 
+      -X POST | jq -r .oidcToken)
+    
+    echo "## Exchanging OIDC Token for Azure access token"
+    az account get-access-token --service-principal --username 44cef2d0-38cc-4365-acdf-8a488d4d7867 --federated-token "$oidc_token" --resource https://vault.azure.net
 
 
 
