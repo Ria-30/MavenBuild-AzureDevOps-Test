@@ -8,13 +8,6 @@ variables:
 
 
 steps:
-- script: |
-    echo "## Getting DevOps OIDC token"
-    oidc_token=$(curl -sSL -H "Accept: application/json; api-version=7.1" "${SYSTEM_OIDCREQUESTURI}?api-version=7.1" -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -H "Content-Length: 0" -X POST | jq -r .oidcToken)
-    echo "## Exchanging OIDC Token for Azure access token"
-    az account get-access-token --subscription f80b01b9-1889-4758-8d0d-d1217135c2ec --resource https://vault.azure.net
-  env:
-    SYSTEM_ACCESSTOKEN: ${System.AccessToken}
 - task: AzureCLI@2
   inputs:
     azureSubscription: 'kv-1'
