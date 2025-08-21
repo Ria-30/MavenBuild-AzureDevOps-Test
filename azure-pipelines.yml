@@ -12,12 +12,11 @@ steps:
     displayName: "Fetch & Decode OIDC Token"
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-      SYSTEM_OIDCREQUESTURI: $(SYSTEM_OIDCREQUESTURI)
     inputs:
       targetType: inline
       script: |
         echo "Requesting OIDC token from Azure DevOps..."
-        token=$(curl -sSf -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" "$SYSTEM_OIDCREQUESTURI?api-version-7.1-preview.1")
+        token=$(curl -sSf -X POST -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -H "Content-Type: application/json" "$SYSTEM_OIDCREQUESTURI?api-version-7.1-preview.1")
         echo "Got OIDC token of length: ${#token}"
 
         echo "Decoding OIDC token payload..."
