@@ -12,7 +12,7 @@ steps:
     echo "## Getting DevOps OIDC token"
     oidc_token=$(curl -sSL -H "Accept: application/json; api-version=7.1" "${SYSTEM_OIDCREQUESTURI}?api-version=7.1" -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -H "Content-Length: 0" -X POST | jq -r .oidcToken)
     echo "## Exchanging OIDC Token for Azure access token"
-    az account get-access-token --tenant 0ae51e19-07c8-4e4b-bb6d-648ee58410f4 --subscription-id f80b01b9-1889-4758-8d0d-d1217135c2ec --client-id 44cef2d0-38cc-4365-acdf-8a488d4d7867 --federated-token "$oidc_token" --resource https://vault.azure.net
+    az account get-access-token --tenant 0ae51e19-07c8-4e4b-bb6d-648ee58410f4 --subscription f80b01b9-1889-4758-8d0d-d1217135c2ec --client-id 44cef2d0-38cc-4365-acdf-8a488d4d7867 --federated-token "$oidc_token" --resource https://vault.azure.net
   env:
     SYSTEM_ACCESSTOKEN: ${System.AccessToken}
 
