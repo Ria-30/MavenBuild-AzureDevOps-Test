@@ -2,25 +2,33 @@ trigger: none
 
 pool:
   vmImage: ubuntu-latest
-
+  
 steps:
   - task: Bash@3
     displayName: "Fetch & Decode OIDC Token"
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      SYSTEM_OIDCREQUESTURI: $(SYSTEM_OIDCREQUESTURI)
     inputs:
       targetType: inline
       script: |
         echo "Requesting OIDC token from Azure DevOps..."
 
-        OIDC_RESPONSE=$(curl -s -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
-          "$SYSTEM_OIDCREQUESTURI&audience=api://AzureADTokenExchange")
+        OIDC_RESPONSE=$(curl -s -X POST \
+          -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "audience=api://AzureADTokenExchange" \
+          $SYSTEM_OIDCREQUESTURI)
+
+        echo "Raw response: $OIDC_RESPONSE"
 
         OIDC_TOKEN=$(echo $OIDC_RESPONSE | jq -r '.value')
 
         echo "Got OIDC token of length: ${#OIDC_TOKEN}"
 
         echo "Decoding OIDC token payload..."
-        PAYLOAD=$(echo "$OIDC_TOKEN" | cut -d "." -f2 | base64 -d 2>/dev/null | jq)
-        echo "$PAYLOAD"
+        echo "$OIDC_TOKEN" | cut -d "." -f2 | base64 -d 2>/dev/null | jq .
+
 
 
 
