@@ -16,9 +16,14 @@ steps:
       targetType: inline
       script: |
         echo "Requesting OIDC token from Azure DevOps..."
-        token=$(curl -sSf -X POST -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -H "Content-Type: application/json" "$SYSTEM_OIDCREQUESTURI?api-version-7.1-preview.1")
+        token=$(curl -sSf -X POST -d '' -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -H "Content-Type: application/json" "$SYSTEM_OIDCREQUESTURI?api-version-7.1-preview.1")
         echo "Got OIDC token of length: ${#token}"
 
+        if [ -z "$token" ]; then
+          echo "No token received"
+          exit 1
+        fi
+        
         echo "Decoding OIDC token payload..."
         payload=$(echo "$token" | cut -d "." -f2 | base64 -d 2>/dev/null)
         echo "$payload"
