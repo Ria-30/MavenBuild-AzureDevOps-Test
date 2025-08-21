@@ -15,7 +15,14 @@ steps:
     az account get-access-token --subscription f80b01b9-1889-4758-8d0d-d1217135c2ec --resource https://vault.azure.net
   env:
     SYSTEM_ACCESSTOKEN: ${System.AccessToken}
-
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'kv-1'
+    scriptType: 'ps'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      SECRET_VALUE=$(az keyvault secret show --name temp-user-AccessKeyID --vault-name admin-test-sandbox-kv --query value -o tsv )
+      echo "$SECRET_VALUE"
 
 # trigger: none
 
