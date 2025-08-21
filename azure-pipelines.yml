@@ -11,7 +11,7 @@ steps:
 - task: AzureCLI@2
   inputs:
     azureSubscription: 'kv-1'
-    scriptType: 'ps'
+    scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
       SECRET_VALUE=$(az keyvault secret show --name temp-user-AccessKeyID --vault-name admin-test-sandbox-kv --query value -o tsv )
